@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.3](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.2...v0.0.3) (2023-07-07)
+
+
+### Bug Fixes
+
+* invalid user-agent ([6755b70](https://github.com/DataShades/ckanext-federated-index/commit/6755b7048b3f8fd34d939a85c77a59cad6da92ac))
+
 ### [0.0.2](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.1...v0.0.2) (2023-07-07)
 
 
