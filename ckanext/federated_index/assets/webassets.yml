@@ -1,0 +1,14 @@
+# federated_index-js:
+#   filter: rjsmin
+#   output: ckanext-federated_index/%(version)s-federated_index.js
+#   contents:
+#     - js/federated_index.js
+#   extra:
+#     preload:
+#       - base/main
+
+# federated_index-css:
+#   filter: cssrewrite
+#   output: ckanext-federated_index/%(version)s-federated_index.css
+#   contents:
+#     - css/federated_index.css

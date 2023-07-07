@@ -1,0 +1,6 @@
+version: 1
+groups:
+  - annotation: ckanext-federated-index
+    options:
+      - key: ckanext.federated_index.align_with_local_schema
+        type: bool
