@@ -6,6 +6,7 @@ import logging
 from collections import defaultdict
 from typing import Any, Iterable
 
+import requests
 from ckanapi import RemoteCKAN
 
 import ckan.plugins.toolkit as tk
@@ -13,6 +14,7 @@ import ckan.plugins.toolkit as tk
 PROFILE_PREFIX: str = "ckanext.federated_index.profile."
 
 log = logging.getLogger(__name__)
+NUMBER_OF_ATTEMPTS = 5
 
 
 @dataclasses.dataclass
@@ -29,13 +31,23 @@ class Profile:
             self.extras = json.loads(self.extras)
 
     def get_client(self):
-        return RemoteCKAN(self.url, self.api_key)
+        return RemoteCKAN(
+            self.url,
+            self.api_key,
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                " AppleWebKit/537.36 (KHTML, like Gecko)"
+                " Chrome/117.0.0.0 Safari/537.36",
+            ),
+        )
 
     def fetch_packages(self) -> Iterable[dict[str, Any]]:
         payload = self.extras.get("search_payload", {})
         payload.setdefault("start", 0)
 
         client = self.get_client()
+
+        attempt = 0
 
         while True:
             log.debug(
@@ -44,11 +56,26 @@ class Profile:
                 payload["start"],
             )
 
-            result: dict[str, Any] = client.call_action(
-                "package_search",
-                payload,
-                requests_kwargs={"timeout": self.timeout},
-            )
+            try:
+                result: dict[str, Any] = client.call_action(
+                    "package_search",
+                    payload,
+                    requests_kwargs={"timeout": self.timeout},
+                )
+            except requests.RequestException:
+                log.exception(
+                    "Cannot pull datasets for profile %s: %s",
+                    self.id,
+                    payload,
+                )
+                attempt += 1
+
+                if attempt > NUMBER_OF_ATTEMPTS:
+                    break
+
+                continue
+
+            attempt = 0
             yield from result["results"]
 
             payload["start"] += len(result["results"])

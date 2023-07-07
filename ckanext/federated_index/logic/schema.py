@@ -1,12 +1,11 @@
-from ckan import types
 from ckan.logic.schema import validator_args
 
 
 @validator_args
 def profile_refresh(
-    not_empty: types.Validator,
-    federated_index_profile: types.Validator,
-) -> types.Schema:
+    not_empty,
+    federated_index_profile,
+):
     return {
         "profile": [not_empty, federated_index_profile],
     }
@@ -14,11 +13,11 @@ def profile_refresh(
 
 @validator_args
 def profile_list(
-    not_empty: types.Validator,
-    federated_index_profile: types.Validator,
-    default: types.ValidatorFactory,
-    int_validator: types.Validator,
-) -> types.Schema:
+    not_empty,
+    federated_index_profile,
+    default,
+    int_validator,
+):
     return {
         "profile": [not_empty, federated_index_profile],
         "offset": [default(0), int_validator],
@@ -28,9 +27,9 @@ def profile_list(
 
 @validator_args
 def profile_index(
-    not_empty: types.Validator,
-    federated_index_profile: types.Validator,
-) -> types.Schema:
+    not_empty,
+    federated_index_profile,
+):
     return {
         "profile": [not_empty, federated_index_profile],
     }
@@ -38,9 +37,9 @@ def profile_index(
 
 @validator_args
 def profile_clear(
-    not_empty: types.Validator,
-    federated_index_profile: types.Validator,
-) -> types.Schema:
+    not_empty,
+    federated_index_profile,
+):
     return {
         "profile": [not_empty, federated_index_profile],
     }

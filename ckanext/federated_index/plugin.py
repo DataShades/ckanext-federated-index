@@ -7,6 +7,7 @@ import ckan.plugins as p
 import ckan.plugins.toolkit as tk
 
 from . import interfaces, shared
+from .logic import action, auth, validators
 
 if TYPE_CHECKING:
     from ckan.common import CKANConfig
@@ -32,14 +33,18 @@ RES_MANDATORY_FIELDS: list[str] = [
 ]
 
 
-@tk.blanket.config_declarations
-@tk.blanket.auth_functions
-@tk.blanket.actions
-@tk.blanket.validators
-@tk.blanket.cli
+# @tk.blanket.config_declarations
 class FederatedIndexPlugin(p.SingletonPlugin):
     p.implements(p.IConfigurer, inherit=True)
     p.implements(interfaces.IFederatedIndex, inherit=True)
+
+    p.implements(p.IActions)
+    p.implements(p.IAuthFunctions)
+    p.implements(p.IValidators)
+
+    get_validators = staticmethod(validators.get_validators)
+    get_actions = staticmethod(action.get_actions)
+    get_auth_functions = staticmethod(auth.get_auth_functions)
 
     def update_config(self, config: CKANConfig) -> None:
         tk.add_template_directory(config, "templates")
@@ -66,7 +71,7 @@ class FederatedIndexPlugin(p.SingletonPlugin):
             ],
         )
 
-        if tk.config["ckanext.federated_index.align_with_local_schema"]:
+        if tk.asbool(tk.config.get("ckanext.federated_index.align_with_local_schema")):
             _align_with_local_schema(pkg_dict)
 
         return pkg_dict

@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 import ckan.plugins as p
 import ckan.plugins.toolkit as tk
-from ckan import model, types
+from ckan import model
 from ckan.lib import redis, search
 from ckan.logic import validate
 
@@ -19,9 +19,18 @@ from . import schema
 log = logging.getLogger(__name__)
 
 
+def get_actions():
+    return {
+        "federated_index_profile_refresh": federated_index_profile_refresh,
+        "federated_index_profile_list": federated_index_profile_list,
+        "federated_index_profile_index": federated_index_profile_index,
+        "federated_index_profile_clear": federated_index_profile_clear,
+    }
+
+
 @validate(schema.profile_refresh)
 def federated_index_profile_refresh(
-    context: types.Context,
+    context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
     tk.check_access("federated_index_profile_refresh", context, data_dict)
@@ -46,7 +55,7 @@ def _cache_key(profile: shared.Profile) -> str:
 
 @validate(schema.profile_list)
 def federated_index_profile_list(
-    context: types.Context,
+    context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
     tk.check_access("federated_index_profile_list", context, data_dict)
@@ -65,7 +74,7 @@ def federated_index_profile_list(
 
 @validate(schema.profile_index)
 def federated_index_profile_index(
-    context: types.Context,
+    context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
     tk.check_access("federated_index_profile_index", context, data_dict)
@@ -130,7 +139,7 @@ def federated_index_profile_index(
 
 @validate(schema.profile_clear)
 def federated_index_profile_clear(
-    context: types.Context,
+    context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
     tk.check_access("federated_index_profile_clear", context, data_dict)
