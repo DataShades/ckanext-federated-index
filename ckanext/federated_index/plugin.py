@@ -105,22 +105,23 @@ def _redirect_missing_federated_packages(response: Any):
 
     pkg_id = solr_literal(pkg_id)
 
-    url_field = "extras_federated_index_remote_url"
+    fq = f"((id:{pkg_id} OR name:{pkg_id}) AND extras_federated_index_remote_url:*)"
     result = tk.get_action("package_search")(
         {},
         {
-            "fq": f"((id:{pkg_id} OR name:{pkg_id}) AND {url_field}:*)",
+            "fq": fq,
             "fl": ",".join(
                 [
+                    "extras_federated_index_profile",
                     "name",
-                    url_field,
+                    "extras_federated_index_remote_url",
                 ],
             ),
             "rows": 1,
         },
     )["results"]
 
-    if result and (url := result[0].get(url_field)):
+    if result and (url := result[0].get("federated_index_remote_url")):
         return tk.redirect_to(url)
 
     return response
