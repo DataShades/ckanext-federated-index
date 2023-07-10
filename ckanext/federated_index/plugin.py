@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 import ckan.plugins as p
 import ckan.plugins.toolkit as tk
+from ckan.lib.search.query import solr_literal
 
 from . import interfaces, shared
 from .logic import action, auth, validators
@@ -32,10 +33,13 @@ RES_MANDATORY_FIELDS: list[str] = [
     "metadata_modified",
 ]
 
+NOT_FOUND = 404
+
 
 # @tk.blanket.config_declarations
 class FederatedIndexPlugin(p.SingletonPlugin):
     p.implements(p.IConfigurer, inherit=True)
+    p.implements(p.IMiddleware, inherit=True)
     p.implements(interfaces.IFederatedIndex, inherit=True)
 
     p.implements(p.IActions)
@@ -45,6 +49,10 @@ class FederatedIndexPlugin(p.SingletonPlugin):
     get_validators = staticmethod(validators.get_validators)
     get_actions = staticmethod(action.get_actions)
     get_auth_functions = staticmethod(auth.get_auth_functions)
+
+    def make_middleware(self, app, config):
+        app.after_request(_redirect_missing_federated_packages)
+        return app
 
     def update_config(self, config: CKANConfig) -> None:
         tk.add_template_directory(config, "templates")
@@ -64,8 +72,8 @@ class FederatedIndexPlugin(p.SingletonPlugin):
                 {
                     "key": "federated_index_remote_url",
                     "value": urljoin(
-                        profile.url,
-                        f"/{pkg_dict['type']}/{pkg_dict['id']}",
+                        profile.url.rstrip("/") + "/",
+                        f"{pkg_dict['type']}/{pkg_dict['id']}",
                     ),
                 },
             ],
@@ -75,6 +83,47 @@ class FederatedIndexPlugin(p.SingletonPlugin):
             _align_with_local_schema(pkg_dict)
 
         return pkg_dict
+
+
+def _redirect_missing_federated_packages(response: Any):
+    if response.status_code != NOT_FOUND or not tk.asbool(
+        tk.config.get("ckanext.federated_index.redirect_missing_federated_datasets"),
+    ):
+        return response
+
+    dataset_endpoints = tk.aslist(
+        tk.config.get("ckanext.federated_index.dataset_read_endpoints", "dataset.read"),
+    )
+
+    if ".".join(tk.get_endpoint()) not in dataset_endpoints:
+        return response
+
+    view_args = tk.request.view_args or {}
+    pkg_id = view_args.get("id")
+    if not pkg_id:
+        return response
+
+    pkg_id = solr_literal(pkg_id)
+
+    result = tk.get_action("package_search")(
+        {},
+        {
+            "fq": f"id:{pkg_id} OR name:{pkg_id} extras_federated_index_profile:*",
+            "fl": ",".join(
+                [
+                    "extras_federated_index_profile",
+                    "name",
+                    "extras_federated_index_remote_url",
+                ],
+            ),
+            "rows": 1,
+        },
+    )["results"]
+
+    if result and (url := result[0].get("federated_index_remote_url")):
+        return tk.redirect_to(url)
+
+    return response
 
 
 def _align_with_local_schema(dataset: dict[str, Any]) -> None:
