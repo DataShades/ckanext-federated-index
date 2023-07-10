@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.6](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.5...v0.0.6) (2023-07-10)
+
+
+### Bug Fixes
+
+* redirect does not work with similar datasets [#2](https://github.com/DataShades/ckanext-federated-index/issues/2) ([f8aa296](https://github.com/DataShades/ckanext-federated-index/commit/f8aa2967d83806f5f75af73981a8cfe914338307))
+
 ### [0.0.5](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.4...v0.0.5) (2023-07-10)
 
 
