@@ -114,6 +114,7 @@ class DbStorage(Storage):
     def reset(self):
         stmt = sa.delete(Record).where(Record.profile_id == self.profile.id)
         model.Session.execute(stmt)
+        model.Session.commit()
 
     def scan(
         self, offset: int = 0, limit: int | None = None
@@ -132,4 +133,5 @@ class DbStorage(Storage):
             yield pkg
 
     def get(self, id: str) -> dict[str, Any] | None:
-        return Record.get(id, self.profile.id)
+        if record := Record.get(id, self.profile.id):
+            return record.data

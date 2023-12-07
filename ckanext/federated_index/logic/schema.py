@@ -18,6 +18,7 @@ def profile_refresh(
         "reset": [boolean_validator],
         "search_payload": [default("{}"), convert_to_json_if_string, dict_only],
         "since_last_refresh": [boolean_validator],
+        "index": [boolean_validator],
     }
 
 
@@ -50,6 +51,16 @@ def profile_index(
 
 @validator_args
 def profile_clear(
+    not_empty: types.Validator,
+    federated_index_profile: types.Validator,
+) -> types.Schema:
+    return {
+        "profile": [not_empty, federated_index_profile],
+    }
+
+
+@validator_args
+def profile_remove(
     not_empty: types.Validator,
     federated_index_profile: types.Validator,
 ) -> types.Schema:

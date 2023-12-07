@@ -55,6 +55,10 @@ def federated_index_profile_refresh(
 
     for pkg in profile.fetch_packages(payload):
         db.add(pkg["id"], pkg)
+        if data_dict["index"]:
+            tk.get_action("federated_index_profile_index")(
+                tk.fresh_context(context), {"profile": profile, "ids": [pkg["id"]]}
+            )
 
     return {
         "profile": profile.id,
@@ -125,8 +129,9 @@ def federated_index_profile_index(
 
         try:
             model.Session.flush()
+
         except IntegrityError:
-            log.exception("Cannot index package %s", pkg_dict["name"])
+            log.exception("Cannot index package %s", pkg_dict["id"])
             model.Session.rollback()
             continue
 
@@ -136,10 +141,13 @@ def federated_index_profile_index(
         try:
             package_index.remove_dict(pkg_dict)
             package_index.update_dict(pkg_dict, True)
-        except (search.SearchIndexError, TypeError):
-            log.exception("Cannot index package %s", pkg_dict["name"])
+
+        except (search.SearchIndexError, TypeError, tk.ObjectNotFound):
+            log.exception("Cannot index package %s", pkg_dict["id"])
+
         else:
-            log.debug("Successfully indexed package %s", pkg_dict["name"])
+            log.debug("Successfully indexed package %s", pkg_dict["id"])
+
         finally:
             model.Session.rollback()
 
@@ -177,4 +185,27 @@ def federated_index_profile_clear(
     return {
         "profile": data_dict["profile"].id,
         "count": resp.hits,
+    }
+
+
+@validate(schema.profile_refresh)
+def federated_index_profile_remove(
+    context: Any,
+    data_dict: dict[str, Any],
+) -> dict[str, Any]:
+    """Remove stored data for the given profile.
+
+    Args:
+        profile(str|Profile): name of the profile or Profile instance
+    """
+    tk.check_access("federated_index_profile_remove", context, data_dict)
+    profile: shared.Profile = data_dict["profile"]
+
+    db = storage.get_storage(profile)
+    count = db.count()
+    db.reset()
+
+    return {
+        "profile": profile.id,
+        "count": count,
     }

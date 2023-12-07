@@ -38,3 +38,10 @@ def federated_index_profile_clear(
     data_dict: dict[str, Any],
 ) -> Any:
     return authz.is_authorized("federated_index_access", context, data_dict)
+
+
+def federated_index_profile_remove(
+    context: Any,
+    data_dict: dict[str, Any],
+) -> Any:
+    return authz.is_authorized("federated_index_access", context, data_dict)
