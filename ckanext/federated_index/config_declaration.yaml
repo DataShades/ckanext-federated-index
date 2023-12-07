@@ -4,3 +4,55 @@ groups:
     options:
       - key: ckanext.federated_index.align_with_local_schema
         type: bool
+        description: |
+          Remove from dataset any field that is not defined in the local
+          dataset schema.
+
+      - key: ckanext.federated_index.redirect_missing_federated_datasets
+        type: bool
+        default: true
+        description: |
+          Redirect user to the original dataset URL when user opens federated
+          dataset that is not recorded in local DB.
+
+      - key: ckanext.federated_index.dataset_read_endpoints
+        type: list
+        default: [dataset.read]
+        description: |
+          Endpoints that are affected by `redirect_missing_federated_datasets`
+          config option.
+
+      - key: ckanext.federated_index.index_url_field
+        default: federated_index_remote_url
+        description: |
+          Name of the dataset extra field that holds original URL of the
+          federated dataset.
+
+      - key: ckanext.federated_index.index_profile_field
+        default: federated_index_profile
+        description: |
+          Name of the dataset extra field that holds federation profile name.
+
+      - key: ckanext.federated_index.profile.<profile>.url
+        type: dynamic
+        description: |
+          URL of the federation profile.
+
+      - key: ckanext.federated_index.profile.<profile>.api_key
+        type: dynamic
+        description: |
+          API Token for the federation profile.
+
+      - key: ckanext.federated_index.profile.<profile>.extras
+        type: dynamic
+        description: |
+          Extra configuration for federation profile. Must be a valid JSON
+          object with the following keys:
+
+            * search_payload: payload sent to remote portal with
+              `package_search` API action when profile is refreshed
+
+      - key: ckanext.federated_index.profile.<profile>.timeout
+        type: dynamic
+        description: |
+          Request timeout for remote portal requests.

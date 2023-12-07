@@ -22,7 +22,6 @@ class Profile:
     id: str
     url: str
     api_key: str = ""
-    index_profile_field: str = "federated_index_profile"
     extras: dict[str, Any] = dataclasses.field(default_factory=dict)
     timeout: int = 10
 
@@ -41,8 +40,12 @@ class Profile:
             ),
         )
 
-    def fetch_packages(self) -> Iterable[dict[str, Any]]:
+    def fetch_packages(
+        self, search_payload: dict[str, Any]
+    ) -> Iterable[dict[str, Any]]:
         payload = self.extras.get("search_payload", {})
+        payload.update(search_payload)
+
         payload.setdefault("start", 0)
 
         client = self.get_client()
@@ -75,6 +78,7 @@ class Profile:
 
                 continue
 
+            log.debug("Processing %s packages", len(result["results"]))
             attempt = 0
             yield from result["results"]
 

@@ -7,13 +7,9 @@ import ckan.plugins.toolkit as tk
 from ckanext.federated_index import shared
 
 
-def get_validators():
-    return {
-        "federated_index_profile": federated_index_profile,
-    }
-
-
 def federated_index_profile(value: Any) -> shared.Profile:
+    """Convert profile ID into profile object.
+    """
     if isinstance(value, shared.Profile):
         return value
 

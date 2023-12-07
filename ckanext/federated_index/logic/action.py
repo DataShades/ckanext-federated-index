@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+from datetime import datetime
 import logging
 from typing import Any
 
@@ -9,23 +9,14 @@ from sqlalchemy.exc import IntegrityError
 import ckan.plugins as p
 import ckan.plugins.toolkit as tk
 from ckan import model
-from ckan.lib import redis, search
+from ckan.lib import search
 from ckan.logic import validate
 
-from ckanext.federated_index import interfaces, shared
+from ckanext.federated_index import interfaces, shared, config, storage
 
 from . import schema
 
 log = logging.getLogger(__name__)
-
-
-def get_actions():
-    return {
-        "federated_index_profile_refresh": federated_index_profile_refresh,
-        "federated_index_profile_list": federated_index_profile_list,
-        "federated_index_profile_index": federated_index_profile_index,
-        "federated_index_profile_clear": federated_index_profile_clear,
-    }
 
 
 @validate(schema.profile_refresh)
@@ -33,24 +24,42 @@ def federated_index_profile_refresh(
     context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
+    """Pull data from the remote file specified by profile settings.
+
+    Args:
+        profile(str|Profile): name of the profile or Profile instance
+        reset(bool): remove existing data
+        search_payload(dict[str, Any]): search parameters
+        since_last_refresh(bool): only fetch packages updated since last refresh
+
+    """
+
     tk.check_access("federated_index_profile_refresh", context, data_dict)
+    profile: shared.Profile = data_dict["profile"]
+    payload = data_dict["search_payload"]
 
-    conn: redis.Redis[bytes] = redis.connect_to_redis()
-    key = _cache_key(data_dict["profile"])
-    conn.delete(key)
+    db = storage.get_storage(profile)
 
-    for pkg in data_dict["profile"].fetch_packages():
-        conn.rpush(key, json.dumps(pkg))
+    if data_dict["since_last_refresh"]:
+        conn = search.make_connection()
+        query = f"+{config.profile_field()}:{profile.id}"
+        resp = conn.search(query, sort="metadata_modified desc", rows=1)
+        if resp.docs:
+            since: datetime = resp.docs[0]["metadata_modified"]
+            payload.setdefault("fq_list", []).append(
+                f"metadata_modified:[{since.isoformat()}Z TO *]"
+            )
+
+    if data_dict["reset"]:
+        db.reset()
+
+    for pkg in profile.fetch_packages(payload):
+        db.add(pkg["id"], pkg)
 
     return {
-        "key": key,
-        "size": conn.llen(key),
+        "profile": profile.id,
+        "count": db.count(),
     }
-
-
-def _cache_key(profile: shared.Profile) -> str:
-    site_id = tk.config["ckan.site_id"]
-    return f"ckan:{site_id}:federated_index:profile:{profile.id}:datasets"
 
 
 @validate(schema.profile_list)
@@ -58,17 +67,21 @@ def federated_index_profile_list(
     context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
+    """List stored datasets from the federation profile.
+
+    Args:
+        profile(str|Profile): name of the profile or Profile instance
+        offset(int, optional): skip N records
+        limit(int, default: 20): show N records at most
+    """
+
     tk.check_access("federated_index_profile_list", context, data_dict)
 
-    conn: redis.Redis[bytes] = redis.connect_to_redis()
-    key = _cache_key(data_dict["profile"])
+    db = storage.get_storage(data_dict["profile"])
 
     return {
-        "results": [
-            json.loads(pkg)
-            for pkg in conn.lrange(key, data_dict["offset"], data_dict["limit"])
-        ],
-        "count": conn.llen(key),
+        "results": list(db.scan(offset=data_dict["offset"], limit=data_dict["limit"])),
+        "count": db.count(),
     }
 
 
@@ -77,23 +90,24 @@ def federated_index_profile_index(
     context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
+    """Index stored data for the profile.
+
+    Args:
+        profile(str|Profile): name of the profile or Profile instance
+
+    """
     tk.check_access("federated_index_profile_index", context, data_dict)
 
     profile: shared.Profile = data_dict["profile"]
-    conn: redis.Redis[bytes] = redis.connect_to_redis()
-    key = _cache_key(profile)
-
+    db = storage.get_storage(data_dict["profile"])
     package_index: search.PackageSearchIndex = search.index_for(model.Package)
 
-    for idx in range(conn.llen(key)):
-        pkg_str = conn.lindex(key, idx)
-        if not pkg_str:
-            log.warning("Cached package with index %d is missing", idx)
-            msg = f"Cached package: {idx}"
-            raise tk.ObjectNotFound(msg)
+    if ids := data_dict.get("ids"):
+        packages = filter(None, map(db.get, ids))
+    else:
+        packages = db.scan()
 
-        pkg_dict = json.loads(pkg_str)
-
+    for pkg_dict in packages:
         if model.Package.get(pkg_dict["name"]):
             log.warning("Package with name %s already exists", pkg_dict["name"])
             continue
@@ -132,8 +146,8 @@ def federated_index_profile_index(
     package_index.commit()
 
     return {
-        "key": key,
-        "size": conn.llen(key),
+        "profile": data_dict["profile"].id,
+        "count": db.count(),
     }
 
 
@@ -142,14 +156,25 @@ def federated_index_profile_clear(
     context: Any,
     data_dict: dict[str, Any],
 ) -> dict[str, Any]:
+    """Remove from search index all datasets of the given profile.
+
+    Args:
+        profile(str|Profile): name of the profile or Profile instance
+
+    """
     tk.check_access("federated_index_profile_clear", context, data_dict)
     profile: shared.Profile = data_dict["profile"]
 
     conn = search.make_connection()
-    query = f"+{profile.index_profile_field}:{profile.id}"
+    query = f"+{config.profile_field()}:{profile.id}"
+
+    resp = conn.search(q=query, rows=0)
 
     conn.delete(q=query)
 
     conn.commit()
 
-    return {}
+    return {
+        "profile": data_dict["profile"].id,
+        "count": resp.hits,
+    }

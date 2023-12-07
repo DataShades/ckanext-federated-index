@@ -1,45 +1,58 @@
+from __future__ import annotations
+
 from ckan.logic.schema import validator_args
+from ckan import types
 
 
 @validator_args
 def profile_refresh(
-    not_empty,
-    federated_index_profile,
-):
+    not_empty: types.Validator,
+    boolean_validator: types.Validator,
+    federated_index_profile: types.Validator,
+    convert_to_json_if_string: types.Validator,
+    dict_only: types.Validator,
+    default: types.ValidatorFactory,
+) -> types.Schema:
     return {
         "profile": [not_empty, federated_index_profile],
+        "reset": [boolean_validator],
+        "search_payload": [default("{}"), convert_to_json_if_string, dict_only],
+        "since_last_refresh": [boolean_validator],
     }
 
 
 @validator_args
 def profile_list(
-    not_empty,
-    federated_index_profile,
-    default,
-    int_validator,
-):
+    not_empty: types.Validator,
+    federated_index_profile: types.Validator,
+    default: types.ValidatorFactory,
+    int_validator: types.Validator,
+) -> types.Schema:
     return {
         "profile": [not_empty, federated_index_profile],
         "offset": [default(0), int_validator],
-        "limit": [default(-1), int_validator],
+        "limit": [default(20), int_validator],
     }
 
 
 @validator_args
 def profile_index(
-    not_empty,
-    federated_index_profile,
-):
+    not_empty: types.Validator,
+    json_list_or_string: types.Validator,
+    ignore_missing: types.Validator,
+    federated_index_profile: types.Validator,
+) -> types.Schema:
     return {
         "profile": [not_empty, federated_index_profile],
+        "ids": [ignore_missing, json_list_or_string],
     }
 
 
 @validator_args
 def profile_clear(
-    not_empty,
-    federated_index_profile,
-):
+    not_empty: types.Validator,
+    federated_index_profile: types.Validator,
+) -> types.Schema:
     return {
         "profile": [not_empty, federated_index_profile],
     }

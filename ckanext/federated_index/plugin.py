@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
+from ckan import types
 
 import ckan.plugins as p
 import ckan.plugins.toolkit as tk
 from ckan.lib.search.query import solr_literal
 
-from . import interfaces, shared
-from .logic import action, auth, validators
+from . import interfaces, shared, config
 
 if TYPE_CHECKING:
     from ckan.common import CKANConfig
@@ -36,41 +36,36 @@ RES_MANDATORY_FIELDS: list[str] = [
 NOT_FOUND = 404
 
 
-# @tk.blanket.config_declarations
+@tk.blanket.config_declarations
+@tk.blanket.actions
+@tk.blanket.validators
+@tk.blanket.auth_functions
 class FederatedIndexPlugin(p.SingletonPlugin):
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.IMiddleware, inherit=True)
     p.implements(interfaces.IFederatedIndex, inherit=True)
 
-    p.implements(p.IActions)
-    p.implements(p.IAuthFunctions)
-    p.implements(p.IValidators)
-
-    get_validators = staticmethod(validators.get_validators)
-    get_actions = staticmethod(action.get_actions)
-    get_auth_functions = staticmethod(auth.get_auth_functions)
-
-    def make_middleware(self, app, config):
+    def make_middleware(self, app: types.CKANApp, config_: CKANConfig):
         app.after_request(_redirect_missing_federated_packages)
         return app
 
-    def update_config(self, config: CKANConfig) -> None:
-        tk.add_template_directory(config, "templates")
+    def update_config(self, config_: CKANConfig) -> None:
+        tk.add_template_directory(config_, "templates")
 
     def federated_index_before_index(
         self,
         pkg_dict: dict[str, Any],
         profile: shared.Profile,
     ) -> dict[str, Any]:
-        pkg_dict[profile.index_profile_field] = profile.id
+        pkg_dict[config.profile_field()] = profile.id
         pkg_dict.setdefault("extras", []).extend(
             [
                 {
-                    "key": profile.index_profile_field,
+                    "key": config.profile_field(),
                     "value": profile.id,
                 },
                 {
-                    "key": "federated_index_remote_url",
+                    "key": config.url_field(),
                     "value": urljoin(
                         profile.url.rstrip("/") + "/",
                         f"{pkg_dict['type']}/{pkg_dict['id']}",
@@ -79,23 +74,21 @@ class FederatedIndexPlugin(p.SingletonPlugin):
             ],
         )
 
-        if tk.asbool(tk.config.get("ckanext.federated_index.align_with_local_schema")):
+        if config.align_schema():
             _align_with_local_schema(pkg_dict)
 
         return pkg_dict
 
 
-def _redirect_missing_federated_packages(response: Any):
-    if response.status_code != NOT_FOUND or not tk.asbool(
-        tk.config.get("ckanext.federated_index.redirect_missing_federated_datasets"),
-    ):
+def _redirect_missing_federated_packages(response: types.Response):
+    if response.status_code != NOT_FOUND or not config.redirect_remote():
         return response
 
-    dataset_endpoints = tk.aslist(
-        tk.config.get("ckanext.federated_index.dataset_read_endpoints", "dataset.read"),
-    )
+    dataset_endpoints = config.read_endpoints()
 
-    if ".".join(tk.get_endpoint()) not in dataset_endpoints:
+    bp, view = tk.get_endpoint()
+
+    if f"{bp}.{view}" not in dataset_endpoints:
         return response
 
     view_args = tk.request.view_args or {}
@@ -105,23 +98,23 @@ def _redirect_missing_federated_packages(response: Any):
 
     pkg_id = solr_literal(pkg_id)
 
-    fq = f"((id:{pkg_id} OR name:{pkg_id}) AND extras_federated_index_remote_url:*)"
+    fq = f"((id:{pkg_id} OR name:{pkg_id}) AND extras_{config.url_field()}:*)"
     result = tk.get_action("package_search")(
         {},
         {
             "fq": fq,
             "fl": ",".join(
                 [
-                    "extras_federated_index_profile",
+                    f"extras_{config.profile_field()}",
                     "name",
-                    "extras_federated_index_remote_url",
+                    f"extras_{config.url_field()}",
                 ],
             ),
             "rows": 1,
         },
     )["results"]
 
-    if result and (url := result[0].get("federated_index_remote_url")):
+    if result and (url := result[0].get(config.url_field())):
         return tk.redirect_to(url)
 
     return response
