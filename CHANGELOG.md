@@ -8,13 +8,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.6...HEAD)</small>
+<small>[Compare with latest](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a1...HEAD)</small>
 
 ### Features
 
-- support DB and Redis storages ([8526ebf](https://github.com/DataShades/ckanext-federated-index/commit/8526ebfa1b9c2c82d1e4d64e8b61186ee628f4fa) by Sergey Motornyuk).
+- set default storage to `db` ([6d58cfe](https://github.com/DataShades/ckanext-federated-index/commit/6d58cfe1b5a4a0238c2ec3e75cd0c30c0a8c26e5) by Sergey Motornyuk).
 
 <!-- insertion marker -->
+## [v0.1.0a1](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.1.0a1) - 2023-12-07
+
+<small>[Compare with v0.1.0a0](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a0...v0.1.0a1)</small>
+
+## [v0.1.0a0](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.1.0a0) - 2023-12-07
+
+<small>[Compare with v0.0.6](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.6...v0.1.0a0)</small>
+
+### Features
+
+- enable redirect for missing datasets by default ([8b03049](https://github.com/DataShades/ckanext-federated-index/commit/8b0304973b1b83947c63191c124b16d10149c9f8) by Sergey Motornyuk).
+- support DB and Redis storages ([8526ebf](https://github.com/DataShades/ckanext-federated-index/commit/8526ebfa1b9c2c82d1e4d64e8b61186ee628f4fa) by Sergey Motornyuk).
+
 ## [v0.0.6](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.0.6) - 2023-07-10
 
 <small>[Compare with v0.0.5](https://github.com/DataShades/ckanext-federated-index/compare/v0.0.5...v0.0.6)</small>
