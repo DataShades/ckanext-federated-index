@@ -6,19 +6,28 @@ from ckan.lib import redis
 import ckan.plugins.toolkit as tk
 from ckan import model
 import abc
-import enum
+import pathlib
+import os
+
+from sqlalchemy.orm import sessionmaker
 from . import shared
 from .model import Record
 
 
 def get_storage(profile: shared.Profile) -> Storage:
-    type = profile.extras.get("storage", {}).get("type", "redis")
+    type = profile.extras.get("storage", {}).get("type", "db")
 
     if type == "redis":
         return RedisStorage(profile)
 
     if type == "db":
         return DbStorage(profile)
+
+    if type == "sqlite":
+        return SqliteStorage(profile)
+
+    if type == "fs":
+        return FsStorage(profile)
 
     raise TypeError(type)
 
@@ -94,6 +103,10 @@ class RedisStorage(Storage):
 
 
 class DbStorage(Storage):
+    def __init__(self, profile: shared.Profile):
+        super().__init__(profile)
+        self.session = model.Session
+
     def add(self, id: str, pkg: dict[str, Any]):
         record = Record.get(id, self.profile.id)
         if not record:
@@ -101,20 +114,20 @@ class DbStorage(Storage):
 
         record.data = pkg
         record.touch()
-        model.Session.add(record)
-        model.Session.commit()
+        self.session.add(record)
+        self.session.commit()
 
     def count(self):
         stmt = sa.select(sa.func.count(Record.id)).where(
             Record.profile_id == self.profile.id
         )
 
-        return model.Session.scalar(stmt)
+        return self.session.scalar(stmt)
 
     def reset(self):
         stmt = sa.delete(Record).where(Record.profile_id == self.profile.id)
-        model.Session.execute(stmt)
-        model.Session.commit()
+        self.session.execute(stmt)
+        self.session.commit()
 
     def scan(
         self, offset: int = 0, limit: int | None = None
@@ -129,9 +142,128 @@ class DbStorage(Storage):
             .limit(limit)
         )
 
-        for pkg in model.Session.scalars(stmt):
+        for pkg in self.session.scalars(stmt):
             yield pkg
 
     def get(self, id: str) -> dict[str, Any] | None:
         if record := Record.get(id, self.profile.id):
             return record.data
+
+
+class SqliteStorage(Storage):
+    table = "federated_index_package"
+
+    def __init__(self, profile: shared.Profile):
+        super().__init__(profile)
+
+        url = profile.extras.setdefault("storage", {}).get("url")
+        if not url:
+            path = os.path.join(tk.config["ckan.storage_path"], "federated_index")
+            if not os.path.isdir(path):
+                os.mkdir(path)
+
+            url = "sqlite:///" + os.path.join(
+                path,
+                f"{profile.id}.sqlite3.db",
+            )
+
+        engine = sa.create_engine(url)
+        if not engine.has_table(self.table):
+            engine.execute(
+                sa.text(
+                    f"""
+                CREATE TABLE IF NOT EXISTS {sa.table(self.table)}(
+                id TEXT,
+                profile_id TEXT,
+                refreshed_at TEXT,
+                data TEXT,
+                PRIMARY KEY(id, profile_id)
+                )
+                """
+                )
+            )
+        self.session = sessionmaker(engine)()
+
+    def add(self, id: str, pkg: dict[str, Any]):
+        record = Record.get(id, self.profile.id)
+        if not record:
+            record = Record(id=id, profile_id=self.profile.id)
+
+        record.data = pkg
+        record.touch()
+        self.session.add(record)
+        self.session.commit()
+
+    def count(self):
+        stmt = sa.select(sa.func.count(Record.id)).where(
+            Record.profile_id == self.profile.id
+        )
+
+        return self.session.scalar(stmt)
+
+    def reset(self):
+        stmt = sa.delete(Record).where(Record.profile_id == self.profile.id)
+        self.session.execute(stmt)
+        self.session.commit()
+
+    def scan(
+        self, offset: int = 0, limit: int | None = None
+    ) -> Iterable[dict[str, Any]]:
+        if limit is not None and limit < 0:
+            limit = limit % max(self.count(), 1)
+
+        stmt = (
+            sa.select(Record.data)
+            .where(Record.profile_id == self.profile.id)
+            .offset(offset)
+            .limit(limit)
+        )
+
+        for pkg in self.session.scalars(stmt):
+            yield pkg
+
+    def get(self, id: str) -> dict[str, Any] | None:
+        if record := Record.get(id, self.profile.id):
+            return record.data
+
+
+class FsStorage(Storage):
+    def __init__(self, profile: shared.Profile):
+        super().__init__(profile)
+
+        path = profile.extras.setdefault("storage", {}).get("path")
+        if not path:
+            path = os.path.join(
+                tk.config["ckan.storage_path"], "federated_index", profile.id
+            )
+
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+        self.path = pathlib.Path(path)
+
+    def add(self, id: str, pkg: dict[str, Any]):
+        filepath = self.path / f"{id}.json"
+        with filepath.open("w") as dest:
+            json.dump(pkg, dest)
+
+    def count(self):
+        return len(list(self.path.iterdir()))
+
+    def reset(self):
+        for filepath in self.path.iterdir():
+            filepath.unlink()
+
+    def scan(
+        self, offset: int = 0, limit: int | None = None
+    ) -> Iterable[dict[str, Any]]:
+        if limit is not None and limit < 0:
+            limit = limit % max(self.count(), 1)
+
+        for filepath in self.path.iterdir():
+            yield json.load(filepath.open())
+
+    def get(self, id: str) -> dict[str, Any] | None:
+        filepath = self.path / f"{id}.json"
+        if filepath.exists():
+            return json.load(filepath.open())

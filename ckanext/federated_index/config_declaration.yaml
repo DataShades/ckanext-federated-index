@@ -52,6 +52,10 @@ groups:
             * search_payload: payload sent to remote portal with
               `package_search` API action when profile is refreshed
 
+            * storage: storage configuration for remote data. Requires `type`
+              parameter with one of the following values: redis, db, sqlite,
+              fs.
+
       - key: ckanext.federated_index.profile.<profile>.timeout
         type: dynamic
         description: |
