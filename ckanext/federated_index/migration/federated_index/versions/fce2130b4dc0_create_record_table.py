@@ -1,14 +1,13 @@
-"""create record table
+"""create record table.
 
 Revision ID: fce2130b4dc0
 Revises:
 Create Date: 2023-12-07 18:17:14.393496
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
-
 
 # revision identifiers, used by Alembic.
 revision = "fce2130b4dc0"
@@ -31,7 +30,7 @@ def upgrade():
             primary_key=True,
         ),
         sa.Column(
-            "refreshed_at", sa.DateTime, server_default=sa.func.current_timestamp()
+            "refreshed_at", sa.DateTime, server_default=sa.func.current_timestamp(),
         ),
         sa.Column("data", JSONB, nullable=False),
     )

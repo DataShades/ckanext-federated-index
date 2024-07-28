@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ckan.plugins.toolkit as tk
 
+
 def align_schema() -> bool:
     return tk.config["ckanext.federated_index.align_with_local_schema"]
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -12,7 +12,7 @@ from ckan import model
 from ckan.lib import search
 from ckan.logic import validate
 
-from ckanext.federated_index import interfaces, shared, config, storage
+from ckanext.federated_index import config, interfaces, shared, storage
 
 from . import schema
 
@@ -31,9 +31,9 @@ def federated_index_profile_refresh(
         reset(bool): remove existing data
         search_payload(dict[str, Any]): search parameters
         since_last_refresh(bool): only fetch packages updated since last refresh
+        index(bool): immediately index every remote package
 
     """
-
     tk.check_access("federated_index_profile_refresh", context, data_dict)
     profile: shared.Profile = data_dict["profile"]
     payload = data_dict["search_payload"]
@@ -47,7 +47,7 @@ def federated_index_profile_refresh(
         if resp.docs:
             since: datetime = resp.docs[0]["metadata_modified"]
             payload.setdefault("fq_list", []).append(
-                f"metadata_modified:[{since.isoformat()}Z TO *]"
+                f"metadata_modified:[{since.isoformat()}Z TO *]",
             )
 
     if data_dict["reset"]:
@@ -57,7 +57,8 @@ def federated_index_profile_refresh(
         db.add(pkg["id"], pkg)
         if data_dict["index"]:
             tk.get_action("federated_index_profile_index")(
-                tk.fresh_context(context), {"profile": profile, "ids": [pkg["id"]]}
+                tk.fresh_context(context),
+                {"profile": profile, "ids": [pkg["id"]]},
             )
 
     return {
@@ -78,7 +79,6 @@ def federated_index_profile_list(
         offset(int, optional): skip N records
         limit(int, default: 20): show N records at most
     """
-
     tk.check_access("federated_index_profile_list", context, data_dict)
 
     db = storage.get_storage(data_dict["profile"])

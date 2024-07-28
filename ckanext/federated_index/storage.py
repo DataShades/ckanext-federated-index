@@ -1,15 +1,18 @@
 from __future__ import annotations
-import sqlalchemy as sa
+
+import abc
+import os
+import pathlib
 from typing import Any, Iterable
-from ckan.common import json
-from ckan.lib import redis
+
+import sqlalchemy as sa
+from sqlalchemy.orm import sessionmaker
+
 import ckan.plugins.toolkit as tk
 from ckan import model
-import abc
-import pathlib
-import os
+from ckan.common import json
+from ckan.lib import redis
 
-from sqlalchemy.orm import sessionmaker
 from . import shared
 from .model import Record
 
@@ -52,7 +55,9 @@ class Storage(abc.ABC):
 
     @abc.abstractmethod
     def scan(
-        self, offset: int = 0, limit: int | None = None
+        self,
+        offset: int = 0,
+        limit: int | None = None,
     ) -> Iterable[dict[str, Any]]:
         raise NotImplementedError
 
@@ -82,7 +87,9 @@ class RedisStorage(Storage):
         self.conn.delete(self._key())
 
     def scan(
-        self, offset: int = 0, limit: int | None = None
+        self,
+        offset: int = 0,
+        limit: int | None = None,
     ) -> Iterable[dict[str, Any]]:
         if limit is None:
             limit = self.count()
@@ -119,7 +126,7 @@ class DbStorage(Storage):
 
     def count(self):
         stmt = sa.select(sa.func.count(Record.id)).where(
-            Record.profile_id == self.profile.id
+            Record.profile_id == self.profile.id,
         )
 
         return self.session.scalar(stmt)
@@ -130,7 +137,9 @@ class DbStorage(Storage):
         self.session.commit()
 
     def scan(
-        self, offset: int = 0, limit: int | None = None
+        self,
+        offset: int = 0,
+        limit: int | None = None,
     ) -> Iterable[dict[str, Any]]:
         if limit is not None and limit < 0:
             limit = limit % max(self.count(), 1)
@@ -142,8 +151,7 @@ class DbStorage(Storage):
             .limit(limit)
         )
 
-        for pkg in self.session.scalars(stmt):
-            yield pkg
+        yield from self.session.scalars(stmt)
 
     def get(self, id: str) -> dict[str, Any] | None:
         if record := Record.get(id, self.profile.id):
@@ -179,8 +187,8 @@ class SqliteStorage(Storage):
                 data TEXT,
                 PRIMARY KEY(id, profile_id)
                 )
-                """
-                )
+                """,
+                ),
             )
         self.session = sessionmaker(engine)()
 
@@ -196,7 +204,7 @@ class SqliteStorage(Storage):
 
     def count(self):
         stmt = sa.select(sa.func.count(Record.id)).where(
-            Record.profile_id == self.profile.id
+            Record.profile_id == self.profile.id,
         )
 
         return self.session.scalar(stmt)
@@ -207,7 +215,9 @@ class SqliteStorage(Storage):
         self.session.commit()
 
     def scan(
-        self, offset: int = 0, limit: int | None = None
+        self,
+        offset: int = 0,
+        limit: int | None = None,
     ) -> Iterable[dict[str, Any]]:
         if limit is not None and limit < 0:
             limit = limit % max(self.count(), 1)
@@ -219,8 +229,7 @@ class SqliteStorage(Storage):
             .limit(limit)
         )
 
-        for pkg in self.session.scalars(stmt):
-            yield pkg
+        yield from self.session.scalars(stmt)
 
     def get(self, id: str) -> dict[str, Any] | None:
         if record := Record.get(id, self.profile.id):
@@ -234,7 +243,9 @@ class FsStorage(Storage):
         path = profile.extras.setdefault("storage", {}).get("path")
         if not path:
             path = os.path.join(
-                tk.config["ckan.storage_path"], "federated_index", profile.id
+                tk.config["ckan.storage_path"],
+                "federated_index",
+                profile.id,
             )
 
         if not os.path.isdir(path):
@@ -255,7 +266,9 @@ class FsStorage(Storage):
             filepath.unlink()
 
     def scan(
-        self, offset: int = 0, limit: int | None = None
+        self,
+        offset: int = 0,
+        limit: int | None = None,
     ) -> Iterable[dict[str, Any]]:
         if limit is not None and limit < 0:
             limit = limit % max(self.count(), 1)

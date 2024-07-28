@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
-from ckan import types
 
 import ckan.plugins as p
 import ckan.plugins.toolkit as tk
+from ckan import types
 from ckan.lib.search.query import solr_literal
 
-from . import interfaces, shared, config
+from . import config, interfaces, shared
 
 if TYPE_CHECKING:
     from ckan.common import CKANConfig
@@ -121,8 +121,7 @@ def _redirect_missing_federated_packages(response: types.Response):
 
 
 def _align_with_local_schema(dataset: dict[str, Any]) -> None:
-    """Throw away fields that doesn't exist in our local dataset schema"""
-
+    """Throw away fields that doesn't exist in our local dataset schema."""
     schema: dict[str, Any] = tk.h.scheming_get_schema("dataset", dataset["type"])
 
     if not schema:

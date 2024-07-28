@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from faker import Faker
 import pytest
+from faker import Faker
+
 import ckan.plugins.toolkit as tk
-from ckanext.federated_index.logic import validators
+
 from ckanext.federated_index import shared
+from ckanext.federated_index.logic import validators
 
 
 class TestFederatedIndexProfile:

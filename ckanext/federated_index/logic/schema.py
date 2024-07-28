@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ckan.logic.schema import validator_args
 from ckan import types
+from ckan.logic.schema import validator_args
 
 
 @validator_args

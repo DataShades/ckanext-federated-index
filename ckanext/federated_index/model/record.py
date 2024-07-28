@@ -4,12 +4,12 @@ from datetime import datetime
 from typing import Any
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 
 import ckan.plugins.toolkit as tk
 from ckan import model, types
 from ckan.lib.dictization import table_dictize
-from sqlalchemy.dialects.postgresql import JSONB
 
 
 def now():
@@ -41,11 +41,11 @@ class Record(tk.BaseModel):  # type: ignore
 
     @classmethod
     def get(cls, id: str, profile: str):
-        """Search for record"""
+        """Search for record."""
         return model.Session.get(cls, (id, profile))
 
     def dictize(self, context: types.Context):
-        """Convert into API compatible dictionary"""
+        """Convert into API compatible dictionary."""
         context.setdefault("model", model)  # type: ignore
         return table_dictize(self, context)
 

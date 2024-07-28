@@ -41,7 +41,7 @@ class Profile:
         )
 
     def fetch_packages(
-        self, search_payload: dict[str, Any]
+        self, search_payload: dict[str, Any],
     ) -> Iterable[dict[str, Any]]:
         payload = self.extras.get("search_payload", {}).copy()
         payload.update(search_payload)
