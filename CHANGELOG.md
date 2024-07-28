@@ -8,13 +8,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a1...HEAD)</small>
+<small>[Compare with latest](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a2...HEAD)</small>
+
+### Features
+
+- Storage.remove method to remove a single package ([42d93cf](https://github.com/DataShades/ckanext-federated-index/commit/42d93cff701ee2435e98da2d0ef6bc67728f04c6) by Sergey Motornyuk).
+- Record uses session-agnostic select instead of get ([042cb25](https://github.com/DataShades/ckanext-federated-index/commit/042cb25928597c92a9604ff1a3c8bf1f7f1b8653) by Sergey Motornyuk).
+- use timezone-aware date columns ([05b242b](https://github.com/DataShades/ckanext-federated-index/commit/05b242baac0667f4c3304074aa8b8e6fcf14d263) by Sergey Motornyuk).
+
+<!-- insertion marker -->
+## [v0.1.0a2](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.1.0a2) - 2023-12-08
+
+<small>[Compare with v0.1.0a1](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a1...v0.1.0a2)</small>
 
 ### Features
 
 - set default storage to `db` ([6d58cfe](https://github.com/DataShades/ckanext-federated-index/commit/6d58cfe1b5a4a0238c2ec3e75cd0c30c0a8c26e5) by Sergey Motornyuk).
 
-<!-- insertion marker -->
 ## [v0.1.0a1](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.1.0a1) - 2023-12-07
 
 <small>[Compare with v0.1.0a0](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a0...v0.1.0a1)</small>
@@ -71,4 +81,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [v0.0.1](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.0.1) - 2023-07-07
 
 <small>[Compare with first commit](https://github.com/DataShades/ckanext-federated-index/compare/4172ac8ffd53199e88bb481a3081cf77c6032a13...v0.0.1)</small>
-

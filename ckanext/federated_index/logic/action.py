@@ -136,7 +136,7 @@ def federated_index_profile_index(
             continue
 
         for plugin in p.PluginImplementations(interfaces.IFederatedIndex):
-            pkg_dict = plugin.federated_index_before_index(pkg_dict, profile)
+            pkg_dict = plugin.federated_index_before_index(pkg_dict, profile)  # noqa: PLW2901
 
         try:
             package_index.remove_dict(pkg_dict)

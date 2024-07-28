@@ -5,6 +5,7 @@ Revises:
 Create Date: 2023-12-07 18:17:14.393496
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
@@ -30,7 +31,9 @@ def upgrade():
             primary_key=True,
         ),
         sa.Column(
-            "refreshed_at", sa.DateTime, server_default=sa.func.current_timestamp(),
+            "refreshed_at",
+            sa.DateTime,
+            server_default=sa.func.current_timestamp(),
         ),
         sa.Column("data", JSONB, nullable=False),
     )

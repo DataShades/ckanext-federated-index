@@ -5,7 +5,7 @@ from ckan.logic.schema import validator_args
 
 
 @validator_args
-def profile_refresh(
+def profile_refresh(  # noqa: PLR0913
     not_empty: types.Validator,
     boolean_validator: types.Validator,
     federated_index_profile: types.Validator,

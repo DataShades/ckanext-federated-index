@@ -49,6 +49,7 @@ ignore = [
                          "S",  # security testing
                          "PLR2004", # magic value used in comparison
                          "ANN",
+                         "D2",
 ]
 "ckanext/federated_index/logic/*" = [
             "D417", # actions don't describe context and data_dict
