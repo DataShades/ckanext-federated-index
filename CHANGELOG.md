@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
-## Unreleased
+## [v0.1.0](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.1.0) - 2024-07-28
 
-<small>[Compare with latest](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a2...HEAD)</small>
+<small>[Compare with v0.1.0a2](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a2...v0.1.0)</small>
 
 ### Features
 
@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Record uses session-agnostic select instead of get ([042cb25](https://github.com/DataShades/ckanext-federated-index/commit/042cb25928597c92a9604ff1a3c8bf1f7f1b8653) by Sergey Motornyuk).
 - use timezone-aware date columns ([05b242b](https://github.com/DataShades/ckanext-federated-index/commit/05b242baac0667f4c3304074aa8b8e6fcf14d263) by Sergey Motornyuk).
 
-<!-- insertion marker -->
 ## [v0.1.0a2](https://github.com/DataShades/ckanext-federated-index/releases/tag/v0.1.0a2) - 2023-12-08
 
 <small>[Compare with v0.1.0a1](https://github.com/DataShades/ckanext-federated-index/compare/v0.1.0a1...v0.1.0a2)</small>
