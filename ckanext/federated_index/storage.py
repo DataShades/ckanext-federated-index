@@ -132,7 +132,7 @@ class DbStorage(Storage):
         self.session.add(record)
         self.session.commit()
 
-    def count(self):
+    def count(self) -> int:
         stmt = sa.select(sa.func.count(Record.id)).where(
             Record.profile_id == self.profile.id,
         )
@@ -219,7 +219,7 @@ class SqliteStorage(Storage):
         self.session.add(record)
         self.session.commit()
 
-    def count(self):
+    def count(self) -> int:
         stmt = sa.select(sa.func.count()).select_from(Record.select(self.profile.id))
 
         return self.session.scalar(stmt)

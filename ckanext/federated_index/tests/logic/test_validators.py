@@ -17,9 +17,9 @@ class TestFederatedIndexProfile:
 
     @pytest.mark.ckan_config(f"{shared.PROFILE_PREFIX}test.url", "http://example.com")
     def test_existing(self, faker: Faker):
-        """Validator return a Profile when correct ID is passed. If validator
-        receives Profile, it's returned unchanged.
+        """Validator return a Profile when correct ID is passed.
 
+        If validator receives Profile, it's returned unchanged.
         """
         profile = validators.federated_index_profile("test")
         assert isinstance(profile, shared.Profile)

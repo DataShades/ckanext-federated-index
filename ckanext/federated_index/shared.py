@@ -10,6 +10,7 @@ import requests
 from ckanapi import RemoteCKAN
 
 import ckan.plugins.toolkit as tk
+from ckan.lib.search.query import solr_literal
 
 PROFILE_PREFIX: str = "ckanext.federated_index.profile."
 
@@ -86,6 +87,46 @@ class Profile:
 
             if result["count"] <= payload["start"]:
                 break
+
+    def check_ids(
+        self,
+        ids: Iterable[str],
+    ) -> Iterable[str]:
+        payload = self.extras.get("search_payload", {}).copy()
+        payload["start"] = 0
+        payload["rows"] = 100
+
+        fq_list = payload.get("fq_list", [])
+
+        client = self.get_client()
+
+        missing: set[str] = set()
+
+        while chunk := [id for (_, id) in zip(range(50), ids)]:
+            log.debug("Fetch package IDS for profile %s", self.id)
+
+            try:
+                result: dict[str, Any] = client.call_action(
+                    "package_search",
+                    dict(
+                        payload,
+                        fq_list=fq_list
+                        + ["id:({})".format(" OR ".join(map(solr_literal, chunk)))],
+                    ),
+                    requests_kwargs={"timeout": self.timeout},
+                )
+            except requests.RequestException:
+                log.exception(
+                    "Cannot verify datasets for profile %s: %s",
+                    self.id,
+                    payload,
+                )
+                break
+
+            log.debug("Processing %s package IDs", len(result["results"]))
+            missing |= set(chunk) - {r["id"] for r in result["results"]}
+
+        return missing
 
 
 def iter_profiles() -> Iterable[Profile]:

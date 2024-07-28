@@ -32,6 +32,7 @@ def federated_index_profile_refresh(
         search_payload(dict[str, Any]): search parameters
         since_last_refresh(bool): only fetch packages updated since last refresh
         index(bool): immediately index every remote package
+        verify(bool): verify that datasets are still available. Default: True
 
     """
     tk.check_access("federated_index_profile_refresh", context, data_dict)
@@ -52,6 +53,10 @@ def federated_index_profile_refresh(
 
     if data_dict["reset"]:
         db.reset()
+
+    if data_dict["verify"]:
+        for pkg_id in profile.check_ids(p["id"] for p in db.scan()):
+            db.remove(pkg_id)
 
     for pkg in profile.fetch_packages(payload):
         db.add(pkg["id"], pkg)
@@ -112,6 +117,9 @@ def federated_index_profile_index(
         packages = db.scan()
 
     for pkg_dict in packages:
+        for plugin in p.PluginImplementations(interfaces.IFederatedIndex):
+            pkg_dict = plugin.federated_index_mangle_package(pkg_dict, profile)  # noqa: PLW2901
+
         if model.Package.get(pkg_dict["name"]):
             log.warning("Package with name %s already exists", pkg_dict["name"])
             continue

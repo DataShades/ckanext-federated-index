@@ -19,6 +19,7 @@ def profile_refresh(  # noqa: PLR0913
         "search_payload": [default("{}"), convert_to_json_if_string, dict_only],
         "since_last_refresh": [boolean_validator],
         "index": [boolean_validator],
+        "verify": [default(True), boolean_validator],
     }
 
 

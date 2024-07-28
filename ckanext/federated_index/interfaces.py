@@ -14,3 +14,10 @@ class IFederatedIndex(Interface):
         profile: shared.Profile,
     ) -> dict[str, Any]:
         return pkg_dict
+
+    def federated_index_mangle_package(
+        self,
+        pkg_dict: dict[str, Any],
+        profile: shared.Profile,
+    ) -> dict[str, Any]:
+        return pkg_dict
