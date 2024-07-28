@@ -50,6 +50,10 @@ class Storage(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def remove(self, id: str) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def reset(self) -> None:
         raise NotImplementedError
 
@@ -82,6 +86,9 @@ class RedisStorage(Storage):
 
     def count(self):
         return self.conn.hlen(self._key())
+
+    def remove(self, id: str):
+        self.conn.hdel(self._key(), id)
 
     def reset(self):
         self.conn.delete(self._key())
@@ -131,6 +138,15 @@ class DbStorage(Storage):
         )
 
         return self.session.scalar(stmt)
+
+    def remove(self, id: str):
+        stmt = (
+            sa.delete(Record)
+            .where(Record.profile_id == self.profile.id)
+            .where(Record.id == id)
+        )
+        self.session.execute(stmt)
+        self.session.commit()
 
     def reset(self):
         stmt = sa.delete(Record).where(Record.profile_id == self.profile.id)
@@ -268,6 +284,10 @@ class FsStorage(Storage):
 
     def count(self):
         return len(list(self.path.iterdir()))
+
+    def remove(self, id: str):
+        filepath = self.path / f"{id}.json"
+        filepath.unlink()
 
     def reset(self):
         for filepath in self.path.iterdir():
