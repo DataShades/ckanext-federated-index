@@ -26,7 +26,7 @@ class TestAppCKAN(ckanapi.TestAppCKAN):
         return super().call_action(action, data_dict, context, apikey, files)
 
 
-class TestFederatedIndexPlugin(p.Plugin):
+class TestFederatedIndexPlugin(p.SingletonPlugin):
     p.implements(interfaces.IFederatedIndex, inherit=True)
 
     def federated_index_mangle_package(
@@ -50,6 +50,9 @@ class TestProfile(shared.Profile):
     id: str = "test"
     url: str = "http://test.ckan.net"
     test_app: Any = None
+    extras: dict[str, Any] = dataclasses.field(
+        default_factory=lambda: {"search_payload": {"q": "-id:test-*"}}
+    )
 
     def get_client(self):
         return TestAppCKAN(self.test_app)

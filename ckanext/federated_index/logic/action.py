@@ -10,6 +10,7 @@ import ckan.plugins as p
 import ckan.plugins.toolkit as tk
 from ckan import model
 from ckan.lib import search
+from ckan.lib.search.query import solr_literal
 from ckan.logic import validate
 
 from ckanext.federated_index import config, interfaces, shared, storage
@@ -56,6 +57,17 @@ def federated_index_profile_refresh(
 
     if data_dict["verify"]:
         for pkg_id in profile.check_ids(p["id"] for p in db.scan()):
+            mangled = db.get(pkg_id)
+            if not mangled:
+                continue
+
+            for plugin in p.PluginImplementations(interfaces.IFederatedIndex):
+                mangled = plugin.federated_index_mangle_package(mangled, profile)  # noqa: PLW2901
+                tk.get_action("federated_index_profile_clear")(
+                    tk.fresh_context(context),
+                    {"profile": profile, "ids": [mangled["id"]]},
+                )
+
             db.remove(pkg_id)
 
     for pkg in profile.fetch_packages(payload):
@@ -119,7 +131,6 @@ def federated_index_profile_index(
     for pkg_dict in packages:
         for plugin in p.PluginImplementations(interfaces.IFederatedIndex):
             pkg_dict = plugin.federated_index_mangle_package(pkg_dict, profile)  # noqa: PLW2901
-
         if model.Package.get(pkg_dict["name"]):
             log.warning("Package with name %s already exists", pkg_dict["name"])
             continue
@@ -183,6 +194,9 @@ def federated_index_profile_clear(
 
     conn = search.make_connection()
     query = f"+{config.profile_field()}:{profile.id}"
+
+    if ids := data_dict.get("ids"):
+        query += " id:({})".format(" OR ".join(map(solr_literal, ids)))
 
     resp = conn.search(q=query, rows=0)
 

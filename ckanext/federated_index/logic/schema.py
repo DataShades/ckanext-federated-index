@@ -54,9 +54,12 @@ def profile_index(
 def profile_clear(
     not_empty: types.Validator,
     federated_index_profile: types.Validator,
+    json_list_or_string: types.Validator,
+    ignore_missing: types.Validator,
 ) -> types.Schema:
     return {
         "profile": [not_empty, federated_index_profile],
+        "ids": [ignore_missing, json_list_or_string],
     }
 
 
