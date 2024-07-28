@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
+from typing_extensions import Self
 
 import ckan.plugins.toolkit as tk
 from ckan import model, types
@@ -13,7 +14,7 @@ from ckan.lib.dictization import table_dictize
 
 
 def now():
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 class Record(tk.BaseModel):  # type: ignore
