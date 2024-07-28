@@ -115,7 +115,8 @@ class DbStorage(Storage):
         self.session = model.Session
 
     def add(self, id: str, pkg: dict[str, Any]):
-        record = Record.get(id, self.profile.id)
+        record: Record | None = self.session.scalar(Record.select(self.profile.id, id))
+
         if not record:
             record = Record(id=id, profile_id=self.profile.id)
 
@@ -154,7 +155,7 @@ class DbStorage(Storage):
         yield from self.session.scalars(stmt)
 
     def get(self, id: str) -> dict[str, Any] | None:
-        if record := Record.get(id, self.profile.id):
+        if record := self.session.scalar(Record.select(self.profile.id, id)):
             return record.data
 
 
@@ -193,7 +194,7 @@ class SqliteStorage(Storage):
         self.session = sessionmaker(engine)()
 
     def add(self, id: str, pkg: dict[str, Any]):
-        record = Record.get(id, self.profile.id)
+        record = self.session.scalar(Record.select(self.profile.id, id))
         if not record:
             record = Record(id=id, profile_id=self.profile.id)
 
@@ -203,11 +204,18 @@ class SqliteStorage(Storage):
         self.session.commit()
 
     def count(self):
-        stmt = sa.select(sa.func.count(Record.id)).where(
-            Record.profile_id == self.profile.id,
-        )
+        stmt = sa.select(sa.func.count()).select_from(Record.select(self.profile.id))
 
         return self.session.scalar(stmt)
+
+    def remove(self, id: str):
+        stmt = (
+            sa.delete(Record)
+            .where(Record.profile_id == self.profile.id)
+            .where(Record.id == id)
+        )
+        self.session.execute(stmt)
+        self.session.commit()
 
     def reset(self):
         stmt = sa.delete(Record).where(Record.profile_id == self.profile.id)
@@ -232,7 +240,7 @@ class SqliteStorage(Storage):
         yield from self.session.scalars(stmt)
 
     def get(self, id: str) -> dict[str, Any] | None:
-        if record := Record.get(id, self.profile.id):
+        if record := self.session.scalar(Record.select(self.profile.id, id)):
             return record.data
 
 

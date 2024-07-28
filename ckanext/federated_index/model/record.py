@@ -41,9 +41,14 @@ class Record(tk.BaseModel):  # type: ignore
     data: Mapped[dict[str, Any]]
 
     @classmethod
-    def get(cls, id: str, profile: str):
-        """Search for record."""
-        return model.Session.get(cls, (id, profile))
+    def select(cls, profile: str, id: str | None = None):
+        """Select the whole profile or single record."""
+        stmt = sa.select(cls).where(cls.profile_id == profile)
+
+        if id:
+            stmt = stmt.where(cls.id == id)
+
+        return stmt
 
     def dictize(self, context: types.Context):
         """Convert into API compatible dictionary."""
